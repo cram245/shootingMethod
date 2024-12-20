@@ -33,31 +33,38 @@ def euler_method(dt):
 
     return t_values, x
 
+
+
+#had to do it like this because I was having trouble when using an approach that used the drag force and acceleration functions
+def f(t, x, v):
+    v_magnitude = np.linalg.norm(v)
+    dxdt = v
+    dvdt = -R * v_magnitude * v + g
+    return dxdt, dvdt
+
+# RK4 Step Function
+def rk4_step(t, x, v, h):
+    k1_dx, k1_dv = f(t, x, v)
+    k2_dx, k2_dv = f(t + h / 2, x + h / 2 * k1_dx, v + h / 2 * k1_dv)
+    k3_dx, k3_dv = f(t + h / 2, x + h / 2 * k2_dx, v + h / 2 * k2_dv)
+    k4_dx, k4_dv = f(t + h, x + h * k3_dx, v + h * k3_dv)
+
+    x_next = x + h / 6 * (k1_dx + 2 * k2_dx + 2 * k3_dx + k4_dx)
+    v_next = v + h / 6 * (k1_dv + 2 * k2_dv + 2 * k3_dv + k4_dv)
+    return x_next, v_next
+
+# RK4 Full Method
 def rk4_method(dt):
     t_values = np.arange(0, t_final + dt, dt)
-    x = np.zeros((len(t_values), 2))
-    v = np.zeros((len(t_values), 2))
+    x = [x0]
+    v = [v0_vector]
 
-    x[0] = x0
-    v[0] = v0_vector
+    for t in t_values[:-1]:
+        x_next, v_next = rk4_step(t, x[-1], v[-1], dt)
+        x.append(x_next)
+        v.append(v_next)
 
-    for i in range(1, len(t_values)):
-        k1_v = acceleration(v[i-1])
-        k1_x = v[i-1]
-
-        k2_v = acceleration(v[i-1] + 0.5 * dt * k1_v)
-        k2_x = v[i-1] + 0.5 * dt * k1_x
-
-        k3_v = acceleration(v[i-1] + 0.5 * dt * k2_v)
-        k3_x = v[i-1] + 0.5 * dt * k2_x
-
-        k4_v = acceleration(v[i-1] + dt * k3_v)
-        k4_x = v[i-1] + dt * k3_x
-
-        v[i] = v[i-1] + (dt / 6) * (k1_v + 2*k2_v + 2*k3_v + k4_v)
-        x[i] = x[i-1] + (dt / 6) * (k1_x + 2*k2_x + 2*k3_x + k4_x)
-
-    return t_values, x
+    return t_values, np.array(x)
 
 # Error estimation
 def estimate_error(x_m, x_2m):
@@ -93,9 +100,9 @@ def calculateBoth(m):
 
 # Plot convergence
 def plot_convergence(initial_steps, cap_steps):
-    steps = [initial_steps, cap_steps]
-    evaluations_euler = [initial_steps + 1, cap_steps + 1]
-    evaluations_rk4 = [4 * (initial_steps + 1), 4 * (cap_steps + 1)]
+    steps = np.arange(initial_steps, cap_steps, 10)
+    evaluations_euler = np.arange(initial_steps + 1, cap_steps + 1, 10)
+    evaluations_rk4 = np.arange(4 * (initial_steps + 1), 4 * (cap_steps + 1), 40)
     
     errors_euler = [estimate_error(euler_method(t_final / s)[1][-1], euler_method(t_final / (2 * s))[1][-1])[0] for s in steps]
     errors_rk4 = [estimate_error(rk4_method(t_final / s)[1][-1], rk4_method(t_final / (2 * s))[1][-1])[0] for s in steps]
@@ -104,8 +111,8 @@ def plot_convergence(initial_steps, cap_steps):
     plt.loglog(evaluations_euler, errors_euler, label="Euler Method", marker="o")
     plt.loglog(evaluations_rk4, errors_rk4, label="RK4 Method", marker="x")
     plt.title("Convergence Plot")
-    plt.xlabel("Number of Function Evaluations")
-    plt.ylabel("Error")
+    plt.xlabel("log(Number of Function Evaluations)")
+    plt.ylabel("log(Error)")
     plt.legend()
     plt.grid(True, which="both", linestyle="--")
     plt.show()
