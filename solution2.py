@@ -119,7 +119,7 @@ def system(t, y):
 # Solve the problem using solve_ivp
 def solve_ivp_method():
     initial_conditions = [0, 0, v0_vector[0], v0_vector[1]]
-    sol = solve_ivp(system, [0, t_final], initial_conditions, method='RK45', t_eval=np.linspace(0, t_final, 100))
+    sol = solve_ivp(system, [0, t_final], initial_conditions, method='RK45', t_eval=np.linspace(0, t_final, 100), rtol=1e-12, atol=1e-12)
     return sol.t, sol.y, sol.nfev
 
 t_euler, x_euler, t_rk4, x_rk4, t_euler_2m, x_euler_2m, t_rk4_2m, x_rk4_2m, error_euler, rel_error_euler, error_rk4, rel_error_rk4 = calculateBoth(m)
